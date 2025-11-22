@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any
 # Cache configuration
 CACHE_DIR = Path.home() / ".cache" / "weather"
 CACHE_FILE = CACHE_DIR / "forecast_cache.json"
-CACHE_VALIDITY = timedelta(minutes=10)  # Cache valid for 10 minutes
+CACHE_VALIDITY = timedelta(hours=1)  # Cache valid for 1 hour
 
 
 def load_cache(city_name: str) -> Optional[Dict[str, Any]]:
@@ -41,6 +41,33 @@ def load_cache(city_name: str) -> Optional[Dict[str, Any]]:
         print(f"Error reading cache: {e}")
         return None
 
+def load_stale_cache(city_name: str) -> Optional[Dict[str, Any]]:
+    """
+    Load cached data even if expired (for offline fallback)
+    
+    Args:
+        city_name: Name of the city
+        
+    Returns:
+        Cached forecast data or None if not found
+    """
+    if not CACHE_FILE.exists():
+        return None
+    
+    try:
+        with open(CACHE_FILE, 'r', encoding='utf-8') as f:
+            cache = json.load(f)
+        
+        # Check if cache is for the correct city
+        if cache.get('city') != city_name:
+            return None
+        
+        # Return data even if expired (for offline use)
+        return cache.get('data')
+        
+    except (json.JSONDecodeError, ValueError, KeyError) as e:
+        print(f"Error reading stale cache: {e}")
+        return None
 
 def save_cache(city_name: str, data: Dict[str, Any]) -> bool:
     """

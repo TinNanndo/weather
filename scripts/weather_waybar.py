@@ -70,31 +70,33 @@ def format_tooltip(city_name, forecast_data):
 def main():
     """Main entry point for Waybar module"""
     try:
-        # Get default city
         city_info = get_default_city()
         
-        # Try to load from cache first
-        cached_data = load_cache(city_info["name"])
+        # Try to load fresh cache first
+        forecast = load_cache(city_info["name"])
         
-        if cached_data:
-            forecast = cached_data
-        else:
-            # Fetch fresh data
+        if not forecast:
+            # No fresh cache, try to fetch from API
             forecast = get_forecast(city_info["lat"], city_info["lon"])
             
-            if not forecast:
-                # No internet and no cache - show cached message
-                print(json.dumps({
-                    "text": f"{city_info['name']}: Offline",
-                    "tooltip": "No internet connection\nUsing cached data if available",
-                    "class": "offline"
-                }), flush=True)
-                return
-            
-            # Save to cache
-            save_cache(city_info["name"], forecast)
+            if forecast:
+                # Save fresh data to cache
+                save_cache(city_info["name"], forecast)
+            else:
+                # No internet - try to load stale cache as fallback
+                from cache import load_stale_cache
+                forecast = load_stale_cache(city_info["name"])
+                
+                if not forecast:
+                    # No cache at all
+                    print(json.dumps({
+                        "text": f"{city_info['name']}: Offline",
+                        "tooltip": "No internet connection\nNo cached data available",
+                        "class": "offline"
+                    }), flush=True)
+                    return
         
-        # Format output
+        # Format output (same as before)
         temp = forecast["current"]["temperature_2m"]
         code = forecast["current"]["weather_code"]
         description = WEATHER_CODES.get(code, "❓ Unknown")
@@ -111,7 +113,6 @@ def main():
         print(json.dumps(output, ensure_ascii=False), flush=True)
         
     except Exception as e:
-        # Catch-all error handler - always output valid JSON
         print(json.dumps({
             "text": "Weather: Error",
             "tooltip": f"Error: {str(e)}",
