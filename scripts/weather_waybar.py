@@ -11,7 +11,7 @@ sys.path.insert(0, str(PROJECT_DIR / "src"))
 
 from config import get_default_city
 from api import get_forecast, WEATHER_CODES
-
+from cache import load_cache, save_cache
 
 def format_tooltip(city_name, forecast_data):
     """Format tooltip with hourly and daily forecast"""
@@ -73,16 +73,26 @@ def main():
         # Get default city
         city_info = get_default_city()
         
-        # Fetch forecast
-        forecast = get_forecast(city_info["lat"], city_info["lon"])
+        # Try to load from cache first
+        cached_data = load_cache(city_info["name"])
         
-        if not forecast:
-            print(json.dumps({
-                "text": "Weather: Error",
-                "tooltip": "Failed to fetch weather data",
-                "class": "error"
-            }))
-            return
+        if cached_data:
+            forecast = cached_data
+        else:
+            # Fetch fresh data
+            forecast = get_forecast(city_info["lat"], city_info["lon"])
+            
+            if not forecast:
+                # No internet and no cache - show cached message
+                print(json.dumps({
+                    "text": f"{city_info['name']}: Offline",
+                    "tooltip": "No internet connection\nUsing cached data if available",
+                    "class": "offline"
+                }), flush=True)
+                return
+            
+            # Save to cache
+            save_cache(city_info["name"], forecast)
         
         # Format output
         temp = forecast["current"]["temperature_2m"]
@@ -98,14 +108,15 @@ def main():
             "class": "weather"
         }
         
-        print(json.dumps(output, ensure_ascii=False))
+        print(json.dumps(output, ensure_ascii=False), flush=True)
         
     except Exception as e:
+        # Catch-all error handler - always output valid JSON
         print(json.dumps({
             "text": "Weather: Error",
             "tooltip": f"Error: {str(e)}",
             "class": "error"
-        }), file=sys.stderr)
+        }), flush=True)
 
 
 if __name__ == "__main__":
