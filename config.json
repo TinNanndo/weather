@@ -1,0 +1,14 @@
+{
+  "default_grad": {
+    "ime": "Pula",
+    "lat": 44.86833,
+    "lon": 13.84806,
+    "drzava": "Hrvatska"
+  },
+  "default_city": {
+    "name": "Pula",
+    "lat": 44.86833,
+    "lon": 13.84806,
+    "country": "Croatia"
+  }
+}
