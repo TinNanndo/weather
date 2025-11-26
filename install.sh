@@ -116,7 +116,7 @@ test_installation() {
     print_info "Testing installation..."
     
     # Test if modules can be imported
-    if python3 -c "import sys; sys.path.insert(0, 'src'); from api import WEATHER_CODES; from config import get_default_city; from cache import load_cache" 2>/dev/null; then
+    if python3 -c "import sys; sys.path.insert(0, 'src'); from api import WEATHER_CODES, DAYS_SHORT; from config import get_default_city; from cache import load_cache" 2>/dev/null; then
         print_success "All modules loaded successfully"
     else
         print_error "Module import failed. Installation may be incomplete."
@@ -162,6 +162,8 @@ show_next_steps() {
     echo "4. Reload Waybar and Hyprland:"
     echo -e "   ${BLUE}killall waybar && waybar &${NC}"
     echo -e "   ${BLUE}hyprctl reload${NC}"
+    echo ""
+    echo "5. (Optional) Custom theme - create ~/.config/weather/theme.json"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
