@@ -1,123 +1,175 @@
 #!/usr/bin/env python3
-import sys
 import json
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
-# Add src to path for imports
-SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_DIR = SCRIPT_DIR.parent
-sys.path.insert(0, str(PROJECT_DIR / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from api import get_forecast
 from config import get_default_city
-from api import get_forecast, WEATHER_CODES
 from cache import load_cache, save_cache
 
-def format_tooltip(city_name, forecast_data):
-    """Format tooltip with hourly and daily forecast"""
-    current = forecast_data["current"]
-    hourly = forecast_data["hourly"]
-    daily = forecast_data["daily"]
+# Nerd Font Material Design weather icons
+WEATHER_ICONS = {
+    0: "󰖙",   # Clear sky - sunny
+    1: "󰖙",   # Mainly clear - sunny
+    2: "󰖖",   # Partly cloudy
+    3: "󰖐",   # Overcast - cloudy
+    45: "󰖑",  # Foggy
+    48: "󰖑",  # Fog
+    51: "󰖗",  # Light drizzle
+    53: "󰖗",  # Moderate drizzle
+    55: "󰖗",  # Dense drizzle
+    61: "󰖛",  # Slight rain
+    63: "󰖛",  # Moderate rain
+    65: "󰖚",  # Heavy rain - pouring
+    66: "󰖞",  # Freezing rain
+    67: "󰖞",  # Heavy freezing rain
+    71: "󰖜",  # Slight snow
+    73: "󰖜",  # Moderate snow
+    75: "󰖝",  # Heavy snow
+    77: "󰖜",  # Snow grains
+    80: "󰖗",  # Slight rain showers
+    81: "󰖛",  # Moderate rain showers
+    82: "󰖚",  # Violent rain showers
+    85: "󰖘",  # Slight snow showers
+    86: "󰖝",  # Heavy snow showers
+    95: "󰖓",  # Thunderstorm
+    96: "󰖓",  # Thunderstorm with hail
+    99: "󰖓",  # Thunderstorm with heavy hail
+}
+
+WEATHER_TEXT = {
+    0: "Clear",
+    1: "Mainly clear",
+    2: "Partly cloudy",
+    3: "Overcast",
+    45: "Foggy",
+    48: "Fog",
+    51: "Light drizzle",
+    53: "Drizzle",
+    55: "Dense drizzle",
+    61: "Light rain",
+    63: "Rain",
+    65: "Heavy rain",
+    66: "Freezing rain",
+    67: "Freezing rain",
+    71: "Light snow",
+    73: "Snow",
+    75: "Heavy snow",
+    77: "Snow grains",
+    80: "Light showers",
+    81: "Showers",
+    82: "Heavy showers",
+    85: "Snow showers",
+    86: "Heavy snow",
+    95: "Thunderstorm",
+    96: "Thunderstorm",
+    99: "Thunderstorm",
+}
+
+DAYS_SHORT = {
+    "Monday": "Mon", "Tuesday": "Tue", "Wednesday": "Wed",
+    "Thursday": "Thu", "Friday": "Fri", "Saturday": "Sat", "Sunday": "Sun"
+}
+
+
+def get_icon(code: int) -> str:
+    return WEATHER_ICONS.get(code, "󰖐")
+
+
+def get_text(code: int) -> str:
+    return WEATHER_TEXT.get(code, "Unknown")
+
+
+def format_tooltip(city: dict, forecast: dict) -> str:
+    current = forecast['current']
+    hourly = forecast['hourly']
+    daily = forecast['daily']
+
+    temp = current['temperature_2m']
+    code = current['weather_code']
+    icon = get_icon(code)
+    desc = get_text(code)
+
+    lines = []
     
-    temp = current["temperature_2m"]
-    code = current["weather_code"]
-    description = WEATHER_CODES.get(code, "❓ Unknown")
+    # Header
+    lines.append(f"{city['name']}: {temp}°C, {icon} {desc}")
+    lines.append("─" * 40)
     
-    # Start tooltip
-    tooltip = f"{city_name}: {temp}°C, {description}\n\n"
-    
-    # Hourly forecast (next 6 hours)
-    tooltip += "─" * 30 + "\nToday:\n"
+    # Today's hourly
+    lines.append("Today:")
     current_hour = datetime.now().hour
-    
     for i in range(current_hour, min(current_hour + 6, 24)):
-        time_str = hourly["time"][i]
-        dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
-        hour = dt.strftime("%H:%M")
-        temp_h = hourly["temperature_2m"][i]
-        code_h = hourly["weather_code"][i]
-        desc_h = WEATHER_CODES.get(code_h, "❓")
-        
-        tooltip += f"   {hour}   {temp_h}°C   {desc_h}\n"
+        if i < len(hourly['time']):
+            h_temp = hourly['temperature_2m'][i]
+            h_code = hourly['weather_code'][i]
+            h_icon = get_icon(h_code)
+            h_text = get_text(h_code)
+            dt = datetime.strptime(hourly['time'][i], "%Y-%m-%dT%H:%M")
+            lines.append(f"    {dt.strftime('%H:%M')}   {h_temp:>5.1f}°C   {h_icon}  {h_text}")
     
-    tooltip += "\n"
+    lines.append("─" * 40)
     
-    # Daily forecast (next 5 days)
-    tooltip += "─" * 30 + "\nNext 5 days:\n"
-    
-    days_short = {
-        "Monday": "Mon", "Tuesday": "Tue", "Wednesday": "Wed",
-        "Thursday": "Thu", "Friday": "Fri", "Saturday": "Sat", "Sunday": "Sun"
-    }
-    
-    for i in range(1, 6):  # Skip today (0), show 1-5
-        date_str = daily["time"][i]
-        dt = datetime.strptime(date_str, "%Y-%m-%d")
-        day_name = dt.strftime("%A")
-        day_short = days_short[day_name]
-        date_fmt = dt.strftime("%d.%m.")
-        
-        t_max = daily["temperature_2m_max"][i]
-        t_min = daily["temperature_2m_min"][i]
-        code_d = daily["weather_code"][i]
-        desc_d = WEATHER_CODES.get(code_d, "❓")
-        
-        tooltip += f"   {day_short} {date_fmt}   {t_min}°C - {t_max}°C   {desc_d}\n"
-    
-    return tooltip
+    # Next 5 days
+    lines.append("Next 5 days:")
+    for i in range(1, 6):
+        if i < len(daily['time']):
+            d_min = daily['temperature_2m_min'][i]
+            d_max = daily['temperature_2m_max'][i]
+            d_code = daily['weather_code'][i]
+            d_icon = get_icon(d_code)
+            d_text = get_text(d_code)
+            dt = datetime.strptime(daily['time'][i], "%Y-%m-%d")
+            day = DAYS_SHORT.get(dt.strftime("%A"), dt.strftime("%a"))
+            date = dt.strftime("%d.%m.")
+            lines.append(f"    {day} {date}   {d_min:>4.1f}°C - {d_max:>4.1f}°C   {d_icon}  {d_text}")
+
+    return "\n".join(lines)
 
 
 def main():
-    """Main entry point for Waybar module"""
-    try:
-        city_info = get_default_city()
-        
-        # Try to load fresh cache first
-        forecast = load_cache(city_info["name"])
-        
-        if not forecast:
-            # No fresh cache, try to fetch from API
-            forecast = get_forecast(city_info["lat"], city_info["lon"])
-            
-            if forecast:
-                # Save fresh data to cache
-                save_cache(city_info["name"], forecast)
-            else:
-                # No internet - try to load stale cache as fallback
-                from cache import load_stale_cache
-                forecast = load_stale_cache(city_info["name"])
-                
-                if not forecast:
-                    # No cache at all
-                    print(json.dumps({
-                        "text": f"{city_info['name']}: Offline",
-                        "tooltip": "No internet connection\nNo cached data available",
-                        "class": "offline"
-                    }), flush=True)
-                    return
-        
-        # Format output (same as before)
-        temp = forecast["current"]["temperature_2m"]
-        code = forecast["current"]["weather_code"]
-        description = WEATHER_CODES.get(code, "❓ Unknown")
-        emoji = description.split()[0]
-        
-        tooltip = format_tooltip(city_info["name"], forecast)
-        
+    city = get_default_city()
+    
+    if not city:
         output = {
-            "text": f"{city_info['name']}: {emoji} {temp}°C",
-            "tooltip": tooltip,
+            "text": "󰖐 --°C",
+            "tooltip": "No city configured",
             "class": "weather"
         }
-        
-        print(json.dumps(output, ensure_ascii=False), flush=True)
-        
-    except Exception as e:
-        print(json.dumps({
-            "text": "Weather: Error",
-            "tooltip": f"Error: {str(e)}",
-            "class": "error"
-        }), flush=True)
+        print(json.dumps(output))
+        return
+
+    forecast = load_cache(city['name'])
+    
+    if not forecast:
+        forecast = get_forecast(city['lat'], city['lon'])
+        if forecast:
+            save_cache(city['name'], forecast)
+
+    if not forecast:
+        output = {
+            "text": "󰖐 --°C",
+            "tooltip": "Failed to fetch weather",
+            "class": "weather-error"
+        }
+        print(json.dumps(output))
+        return
+
+    current = forecast['current']
+    temp = current['temperature_2m']
+    code = current['weather_code']
+    icon = get_icon(code)
+
+    output = {
+        "text": f"{city['name']}: {icon} {temp:.1f}°C",
+        "tooltip": format_tooltip(city, forecast),
+        "class": "weather"
+    }
+    
+    print(json.dumps(output))
 
 
 if __name__ == "__main__":
