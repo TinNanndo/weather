@@ -1,4 +1,3 @@
-# src/theme.py
 import tomllib
 import json
 from pathlib import Path
@@ -127,19 +126,15 @@ def get_omarchy_colors() -> dict:
         "warning": "#F0BE66",
     }
     
-    # 1. Probaj Omarchy temu prvo
     raw = parse_alacritty() or parse_ghostty() or parse_kitty()
     
     if raw:
         bg = raw.get("background", default["background"])
         fg = raw.get("foreground", default["foreground"])
         
-        # Detektiraj light/dark temu
         if is_light_theme(bg):
-            # Light tema - surface treba biti svjetlija od pozadine
             surface = raw.get("white", "#ffffff")
         else:
-            # Dark tema - surface treba biti tamnija
             surface = raw.get("black", default["surface"])
         
         return {
@@ -151,11 +146,9 @@ def get_omarchy_colors() -> dict:
             "error": raw.get("green", default["error"]),
             "warning": raw.get("yellow", default["warning"]),
         }
-    
-    # 2. Ako nema Omarchy, probaj custom theme.json
+
     custom = parse_custom()
     if custom:
         return {**default, **custom}
-    
-    # 3. Fallback na default
+
     return default
