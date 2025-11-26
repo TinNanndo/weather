@@ -6,11 +6,11 @@ A minimalist terminal weather application for Hyprland/Waybar.
 
 ## Light Theme
 
-[Screenshot(light)](screenshot(light).png)
+![Screenshot(light)](screenshot(light).png)
 
 ## Dark Theme
 
-[Screenshot(dark)](screenshot(dark).png)
+![Screenshot(dark)](screenshot(dark).png)
 
 ## Features
 
