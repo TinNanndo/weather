@@ -58,9 +58,17 @@ Add to `~/.config/waybar/config.jsonc`:
 
 Add to `~/.config/hypr/hyprland.conf`:
 ```conf
+# For Ghostty (matches by title)
+windowrulev2 = float, title:^(WeatherTUI)$
+windowrulev2 = size 70% 80%, title:^(WeatherTUI)$
+windowrulev2 = center, title:^(WeatherTUI)$
+
+# For Alacritty/Kitty (matches by class)
 windowrulev2 = float, class:(weather-tui)
 windowrulev2 = size 70% 80%, class:(weather-tui)
 windowrulev2 = center, class:(weather-tui)
+```
+```
 ```
 
 ## Theming
