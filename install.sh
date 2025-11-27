@@ -146,18 +146,24 @@ show_next_steps() {
     echo -e "   ${BLUE}python3 src/tui.py${NC}"
     echo ""
     echo "2. Add to Waybar config (~/.config/waybar/config.jsonc):"
-    echo -e '   ${YELLOW}"custom/weather": {'
-    echo '     "exec": "python3 ~/.config/weather/scripts/weather_waybar.py",'
-    echo '     "return-type": "json",'
-    echo '     "interval": 900,'
-    echo '     "on-click": "~/.config/weather/scripts/launch_tui.sh"'
+    echo -e "   ${YELLOW}\"custom/weather\": {"
+    echo "     \"exec\": \"python3 ~/.config/weather/scripts/weather_waybar.py\","
+    echo "     \"return-type\": \"json\","
+    echo "     \"interval\": 900,"
+    echo "     \"on-click\": \"~/.config/weather/scripts/launch_tui.sh\""
     echo -e "   }${NC}"
     echo ""
-    echo "3. Add Hyprland window rule (~/.config/hypr/hyprland.conf):"
+    echo "3. Add Hyprland window rules (~/.config/hypr/hyprland.conf):"
+    echo ""
+    echo "   For Ghostty (title matching):"
+    echo -e "   ${YELLOW}windowrulev2 = float, title:^(WeatherTUI)\$"
+    echo "   windowrulev2 = size 70% 80%, title:^(WeatherTUI)\$"
+    echo -e "   windowrulev2 = center, title:^(WeatherTUI)\$${NC}"
+    echo ""
+    echo "   For Alacritty/Kitty (class matching):"
     echo -e "   ${YELLOW}windowrulev2 = float, class:(weather-tui)"
     echo "   windowrulev2 = size 70% 80%, class:(weather-tui)"
-    echo "   windowrulev2 = center, class:(weather-tui)"
-    echo -e "   windowrulev2 = animation slide, class:(weather-tui)${NC}"
+    echo -e "   windowrulev2 = center, class:(weather-tui)${NC}"
     echo ""
     echo "4. Reload Waybar and Hyprland:"
     echo -e "   ${BLUE}killall waybar && waybar &${NC}"
