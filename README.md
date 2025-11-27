@@ -56,14 +56,10 @@ Add to `~/.config/waybar/config.jsonc`:
 
 ## Hyprland
 
-Add to `~/.config/hypr/hyprland.conf`:
-```conf
-# For Ghostty (matches by title)
-windowrulev2 = float, title:^(WeatherTUI)$
-windowrulev2 = size 70% 80%, title:^(WeatherTUI)$
-windowrulev2 = center, title:^(WeatherTUI)$
+Window floating is handled automatically by the launch script. No manual configuration needed!
 
-# For Alacritty/Kitty (matches by class)
+(Optional) If you prefer manual window rules, add to `~/.config/hypr/hyprland.conf`:
+```conf
 windowrulev2 = float, class:(weather-tui)
 windowrulev2 = size 70% 80%, class:(weather-tui)
 windowrulev2 = center, class:(weather-tui)
